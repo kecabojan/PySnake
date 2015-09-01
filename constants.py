@@ -17,8 +17,8 @@ DIR_RIGHT = -1
 DIR_UP = 2
 DIR_DOWN = -2
 
-SCREEN_SIZE = 500                   # game's screen size in pixels
-SCREEN_WIDTH_TO_SNAKE_WIDTH = 30    # size of the snake (width) -> 40 times smaller then screen width
+FRAME_SIZE = 500                   # game's screen size in pixels
+FRAME_WIDTH_TO_SNAKE_WIDTH = 30    # size of the snake (width) -> 40 times smaller then screen width
 
 
 

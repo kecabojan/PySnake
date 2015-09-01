@@ -14,24 +14,25 @@ class Snake(object):
     """ Represents snake which eats mice and crawls through maze
     """
 
-    def __init__(self, screen, width):
+    def __init__(self, frame, width):
         """
         :return: Initializer
         """
-        self.direction = DIR_RIGHT                      # keep snake's current direction
-        self.screen = screen
-        self._width = width
-        self.boundary = screen.get_width() / width      # maximum grid position in both X and Y directions
-
         ''' grid_occupied represent list of coordinates of the grid occupied by snake. When snake eats a mouse,
             grid_occupied list grows by one represented by tuple(x,y).
-            x,y are in range of 0 to (screen_size / snake_width). Head of snake is last element of the list
+            x,y are in range of 0 to (frame_size / snake_width). Head of snake is last element of the list
         '''
         self.grid_occupied = [(x, 5) for x in range(0, 3)]     # occupy 5 squares initially
+
+        self._direction = DIR_RIGHT                      # keep snake's current direction
+        self._frame = frame
+        self._width = width
+        self._boundary = frame.get_width() / width      # maximum grid position in both X and Y directions
+
         self._prev_tail = ()    # we will always remember previous tail position so we can repaint it in black
         self._last_move_timestamp = 0                   # used in moving the snake
         self._grow = False                              # Should Snake grow for one or not on next move
-        self._no_walls = False
+        self._no_walls = True
 
     def head(self):
         """
@@ -71,8 +72,8 @@ class Snake(object):
         # if snakes is already moving to the right, then snake cannot turn left immediately,
         # it can go only to up, down or continue moving to the right
 
-        if self.direction != -direction:    # allowed moves
-            self.direction = direction
+        if self._direction != -direction:    # allowed moves
+            self._direction = direction
 
         # current_time = pg.time.get_ticks()
         # if current_time < self._last_move_timestamp + 50:  # check if it time to move the snake
@@ -82,48 +83,48 @@ class Snake(object):
 
         head = self.head()
         if self._no_walls:
-            if self.direction == DIR_LEFT:
+            if self._direction == DIR_LEFT:
                 # calculate new position of the head using modulus arithmetic
-                temp_pos = ((head[0]-1) % self.boundary, head[1])
+                temp_pos = ((head[0]-1) % self._boundary, head[1])
                 if temp_pos in self.grid_occupied:                  # snake hit itself, end game
                     return False
                 self.grid_occupied.append(temp_pos)                 # new head becomes left grid position to current
-            elif self.direction == DIR_RIGHT:
+            elif self._direction == DIR_RIGHT:
                 # calculate new position of the head using modulus arithmetic
-                temp_pos = ((head[0]+1) % self.boundary, head[1])
+                temp_pos = ((head[0]+1) % self._boundary, head[1])
                 if temp_pos in self.grid_occupied:                  # snake hit itself, end game
                     return False
                 self.grid_occupied.append(temp_pos)                 # new head becomes left grid position to current
-            elif self.direction == DIR_UP:
+            elif self._direction == DIR_UP:
                 # calculate new position of the head using modulus arithmetic
-                temp_pos = (head[0], (head[1]-1) % self.boundary)
+                temp_pos = (head[0], (head[1]-1) % self._boundary)
                 if temp_pos in self.grid_occupied:                  # snake hit itself, end game
                     return False
                 self.grid_occupied.append(temp_pos)                 # new head becomes left grid position to current
-            elif self.direction == DIR_DOWN:
+            elif self._direction == DIR_DOWN:
                 # calculate new position of the head using modulus arithmetic
-                temp_pos = (head[0], (head[1]+1) % self.boundary)
+                temp_pos = (head[0], (head[1]+1) % self._boundary)
                 if temp_pos in self.grid_occupied:                  # snake hit itself, end game
                     return False
                 self.grid_occupied.append(temp_pos)                 # new head becomes left grid position to current
         else:
-            if self.direction == DIR_LEFT:
+            if self._direction == DIR_LEFT:
                 if head[0] == 0:                # check if head hit the left wall
                     return False
 
                 self.grid_occupied.append((head[0]-1, head[1]))     # new head becomes left grid position to current
-            elif self.direction == DIR_RIGHT:
-                if head[0] == self.boundary-1:    # check if head hit the right wall
+            elif self._direction == DIR_RIGHT:
+                if head[0] == self._boundary-1:    # check if head hit the right wall
                     return False
 
                 self.grid_occupied.append((head[0]+1, head[1]))     # new head becomes right grid position to current
-            elif self.direction == DIR_UP:
+            elif self._direction == DIR_UP:
                 if head[1] == 0:                # check if head hit the up wall
                     return False
 
                 self.grid_occupied.append((head[0], head[1]-1))     # new head becomes up grid position to current
-            elif self.direction == DIR_DOWN:
-                if head[1] == self.boundary-1:    # check if head hit the down wall
+            elif self._direction == DIR_DOWN:
+                if head[1] == self._boundary-1:    # check if head hit the down wall
                     return False
 
                 self.grid_occupied.append((head[0], head[1]+1))     # new head becomes down grid position to current
@@ -141,7 +142,7 @@ class Snake(object):
         :param color: color to fill the rectangle
         """
 
-        pg.draw.rect(self.screen, color, [x * self._width, y * self._width, self._width, self._width], 0)
+        pg.draw.rect(self._frame, color, [x * self._width, y * self._width, self._width, self._width], 0)
 
 
 

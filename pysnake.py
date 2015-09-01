@@ -19,10 +19,10 @@ def secure_screen_size():
     Ensures that screen size to snake width ratio is correct,
     increments the screen size until ratio is good
     """
-    global SCREEN_SIZE
+    global FRAME_SIZE
 
-    while SCREEN_SIZE % SCREEN_WIDTH_TO_SNAKE_WIDTH != 0:
-        SCREEN_SIZE += 1
+    while FRAME_SIZE % FRAME_WIDTH_TO_SNAKE_WIDTH != 0:
+        FRAME_SIZE += 1
 
 
 class SnakeGame(object):
@@ -35,16 +35,26 @@ class SnakeGame(object):
         secure_screen_size()
         pg.init()               # initialize pygame module
 
-        self._screen = pg.display.set_mode((SCREEN_SIZE, SCREEN_SIZE))
         pg.display.set_caption('PySnake Game')
+
+        # height of upper bound line of the drawing frame
+        self._snake_width = FRAME_SIZE/FRAME_WIDTH_TO_SNAKE_WIDTH
+        # make main screen surface a little bit higher (for score text)
+        self._screen = pg.display.set_mode((FRAME_SIZE, FRAME_SIZE + self._snake_width * 2))
+
+        # make a subsurface from screen surface. It will be rectangle where snake will move
+        self._frame = self._screen.subsurface([0, self._snake_width*2, FRAME_SIZE, FRAME_SIZE])
 
         # set of all grid fields: range for x and y go from 0 to SCREEN_WIDTH_TO_SNAKE_WIDTH - 1
         # it will be used to pick a place for draw mouse for snake to chase
-        self._grid_field_list = [(x, y) for x in xrange(SCREEN_WIDTH_TO_SNAKE_WIDTH) for y in xrange(SCREEN_WIDTH_TO_SNAKE_WIDTH)]
-        self._grid_field_size = self._screen.get_width() / SCREEN_WIDTH_TO_SNAKE_WIDTH   # in pixels
+        self._grid_field_list = [(x, y) for x in xrange(FRAME_WIDTH_TO_SNAKE_WIDTH) for y in xrange(FRAME_WIDTH_TO_SNAKE_WIDTH)]
+        self._grid_field_size = self._screen.get_width() / FRAME_WIDTH_TO_SNAKE_WIDTH   # in pixels
+
+        # initialize font
+        self._font = pg.font.SysFont("monospace", self._snake_width*2 - 3)
 
         # create snake
-        self._snake = Snake(self._screen, self._screen.get_width() / SCREEN_WIDTH_TO_SNAKE_WIDTH)
+        self._snake = Snake(self._frame, self._snake_width)
 
         # Clock object is used to slow down and main loop, it ensures the FPS
         self._clock = pg.time.Clock()
@@ -53,13 +63,16 @@ class SnakeGame(object):
         self._speed = 10
         # default speed increment when snake catches mouse
         self._speed_inc = 3
-        # increment score when snake catches mouse
+        # increment score when snake catches the mouse
         self._score = 0
 
     def run(self):
         # draw the white background onto the surface
-        self._screen.fill(BLACK)
+        self._frame.fill(BLACK)
 
+        # draw frame for the game
+        self._draw_frame_line()
+        self._draw_score()
         self._snake.draw(draw_everything=True)
         mouse_pos = self._draw_mouse()
         pg.display.update()
@@ -68,17 +81,21 @@ class SnakeGame(object):
         direction = DIR_RIGHT   # initial movement direction
         while self._snake.move(direction) and running:
             self._snake.draw()
-            pg.display.flip()
+            self._draw_frame_line()
 
             # check if snake's head is on the mouse field
             if self._snake.head() == mouse_pos:
+                self._delete_score()
                 self._score += 1
                 self._snake.grow()
                 self._delete_mouse(mouse_pos)   # snake eats mouse -> remove it from field
                 mouse_pos = self._draw_mouse()  # re-draw mouse again
                 self._speed += self._speed_inc  # increase play speed
 
-            self._clock.tick(self._speed)   # ensure frame rate of the game -> higher the FPS, snake will be faster
+            self._draw_score()
+            pg.display.flip()
+
+            self._clock.tick(self._speed)   # ensure frame rate of the game: higher the FPS -> snake will be faster
 
             for event in pg.event.get():
                 if event.type is pg.QUIT:
@@ -103,12 +120,12 @@ class SnakeGame(object):
 
         pos = self._snake.grid_occupied[0]
         while pos in self._snake.grid_occupied:
-            pos = (randint(0, SCREEN_WIDTH_TO_SNAKE_WIDTH-1), randint(0, SCREEN_WIDTH_TO_SNAKE_WIDTH-1))
+            pos = (randint(0, FRAME_WIDTH_TO_SNAKE_WIDTH-1), randint(0, FRAME_WIDTH_TO_SNAKE_WIDTH-1))
 
         # draw a pink circle onto the surface
         center = (pos[0] * self._grid_field_size + self._grid_field_size / 2,
                   pos[1] * self._grid_field_size + self._grid_field_size / 2)
-        pg.draw.circle(self._screen, PINK, center, self._grid_field_size / 2, 0)
+        pg.draw.circle(self._frame, PINK, center, self._grid_field_size / 2, 0)
 
         return pos
 
@@ -118,8 +135,31 @@ class SnakeGame(object):
         """
         center = (pos[0] * self._grid_field_size + self._grid_field_size / 2,
                   pos[1] * self._grid_field_size + self._grid_field_size / 2)
-        pg.draw.circle(self._screen, BLACK, center, self._grid_field_size / 2, 0)
+        pg.draw.circle(self._frame, BLACK, center, self._grid_field_size / 2, 0)
 
+    def _draw_frame_line(self):
+        """
+        Draws the gaming frame
+        """
+        pg.draw.rect(self._frame, GREEN, [0, 0, self._frame.get_width(), self._frame.get_height()], 2)
+
+    def _draw_score(self):
+        """
+        Draws the score on top left corner of the screen
+        """
+        label_surface = self._font.render("SCORE: {0}".format(self._score), 0, PINK)
+        # use SCREEN surface (not FRAME surface) and blit label
+        self._screen.blit(label_surface, (self._snake_width, 2))
+
+    def _delete_score(self):
+        """
+        Delete the score on top left corner of the screen by blitting BLACK label
+        """
+        #pg.draw.rect(self._screen, BLACK, [0, 3, 50, self._snake_width], 0)
+        label_surface = self._font.render("SCORE: {0}".format(self._score), 0, BLACK)
+
+        # use SCREEN surface (not FRAME surface) and blit label
+        self._screen.blit(label_surface, (self._snake_width, 2))
 
 def main():
     SnakeGame().run()
